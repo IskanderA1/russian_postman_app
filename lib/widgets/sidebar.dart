@@ -142,7 +142,7 @@ class _SideBarState extends State<SideBar>
                             ? _buildLocation()
                             : _buildGetLocation(),
                         _buildTrackRoad(),
-                        _buildDescription(),
+                        //_buildDescription(),
                       ],
                     ),
                   ),
