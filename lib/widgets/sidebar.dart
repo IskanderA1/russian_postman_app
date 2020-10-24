@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:flutter/material.dart';
 import 'package:russian_postman_app/model/task.dart';
+import 'package:russian_postman_app/repo/networking.dart';
 import 'package:russian_postman_app/util/constants.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:russian_postman_app/services/location_service.dart';
@@ -34,12 +35,14 @@ class _SideBarState extends State<SideBar>
   Function _setAddressLocation;
   Function _clearRoad;
   TaskModel _taskModel;
+  String _response = "";
   bool cityEnable;
   bool streetEnable;
   bool houseEnable;
   bool locationEnable;
   bool _trackLocationEnable = false;
   List<String> _listDescription;
+  String _description = "Неорпределено";
 
   AnimationController _animationController;
   StreamController<bool> isSidebarOpenedStreamController;
@@ -73,7 +76,8 @@ class _SideBarState extends State<SideBar>
       "Многоквартирный дом",
       "Магазин",
       "Заброшенное здание",
-      "Предприятие"
+      "Предприятие",
+      "Неорпределено",
     ];
   }
 
@@ -141,8 +145,10 @@ class _SideBarState extends State<SideBar>
                         !locationEnable
                             ? _buildLocation()
                             : _buildGetLocation(),
+                        _buildDescription(),
                         _buildTrackRoad(),
-                        //_buildDescription(),
+                        _buildSendButton(),
+                        _buildResponseText()
                       ],
                     ),
                   ),
@@ -192,6 +198,11 @@ class _SideBarState extends State<SideBar>
           alignment: Alignment.centerLeft,
           decoration: kBoxDecorationStyle,
           child: TextField(
+            onChanged: (value) {
+              setState(() {
+                _taskModel.city = value;
+              });
+            },
             enabled: cityEnable,
             controller: !cityEnable
                 ? TextEditingController.fromValue(
@@ -235,6 +246,11 @@ class _SideBarState extends State<SideBar>
           alignment: Alignment.centerLeft,
           decoration: kBoxDecorationStyle,
           child: TextField(
+            onChanged: (value) {
+              setState(() {
+                _taskModel.street = value;
+              });
+            },
             enabled: streetEnable,
             controller: !streetEnable
                 ? TextEditingController.fromValue(
@@ -278,6 +294,11 @@ class _SideBarState extends State<SideBar>
           alignment: Alignment.centerLeft,
           decoration: kBoxDecorationStyle,
           child: TextField(
+            onChanged: (value) {
+              setState(() {
+                _taskModel.house = value;
+              });
+            },
             enabled: houseEnable,
             controller: !houseEnable
                 ? TextEditingController.fromValue(
@@ -490,14 +511,10 @@ class _SideBarState extends State<SideBar>
             ),
             Expanded(
               flex: 1,
-              child: _trackLocationEnable
+              child: _taskModel.road.isNotEmpty
                   ? MaterialButton(
                       onPressed: () async {
                         setState(() {
-                          _trackLocationEnable
-                              ? _trackLocationEnable = false
-                              : _trackLocationEnable = true;
-                          _trackLocationUpdate();
                           _clearRoad();
                         });
                       },
@@ -524,32 +541,112 @@ class _SideBarState extends State<SideBar>
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
           SizedBox(height: 10.0),
-          Expanded(
-            child: DropdownButton<String>(
-              hint: Text("Выберите тип объекта"),
-              value: _taskModel.taskDescription,
-              onChanged: (String value) {
-                setState(() {
-                  this._taskModel.taskDescription = value;
-                  print(_taskModel.taskDescription);
-                });
+          DropdownButton<String>(
+            hint: Text("Выберите тип объекта"),
+            value: _description,
+            onChanged: (String value) {
+              setState(() {
+                this._description = value;
+                _taskModel.taskDescription = value;
+                print(_taskModel.taskDescription);
+              });
+            },
+            items: _listDescription.map((String value) {
+              return DropdownMenuItem<String>(
+                value: value,
+                child: Row(
+                  children: <Widget>[
+                    SizedBox(
+                      width: 10,
+                    ),
+                    Text(
+                      value,
+                      style: TextStyle(color: Colors.black),
+                    ),
+                  ],
+                ),
+              );
+            }).toList(),
+          ),
+        ]);
+  }
+
+  Widget _buildSendButton() {
+    return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          SizedBox(height: 10.0),
+          MaterialButton(
+              onPressed: () async {
+                NetworkHelper networkHelper = NetworkHelper();
+                try {
+                  if (_taskModel.type == 1 && _taskModel.lat > 0) {
+                    if (await networkHelper.SendCord(_taskModel)) {
+                      setState(() {
+                        _response = "Передано: Координаты адресата";
+                      });
+                      if (_taskModel.road.isNotEmpty) {
+                        setState(() {
+                          _response += "\nи запись пути";
+                        });
+                      }
+                    } else {
+                      setState(() {
+                        _response = "Не отправилось";
+                      });
+                    }
+                  } else if (_taskModel.type == 2 &&
+                      (_taskModel.street.isNotEmpty ||
+                          _taskModel.house.isNotEmpty)) {
+                    if (await networkHelper.SendAddress(_taskModel)) {
+                      setState(() {
+                        _response = "Передано: Адрес";
+                      });
+                      if (_taskModel.road.isNotEmpty) {
+                        setState(() {
+                          _response += "\nи запись пути";
+                        });
+                      }
+                    } else {
+                      setState(() {
+                        _response = "Не отправилось";
+                      });
+                    }
+                  } else {
+                    setState(() {
+                      _response = "Заполните поля";
+                    });
+                  }
+                } catch (e) {
+                  setState(() {
+                    _response = "Нет сети интернета";
+                  });
+                }
               },
-              items: _listDescription.map((String value) {
-                return DropdownMenuItem<String>(
-                  value: value,
-                  child: Row(
-                    children: <Widget>[
-                      SizedBox(
-                        width: 10,
-                      ),
-                      Text(
-                        value,
-                        style: TextStyle(color: Colors.black),
-                      ),
-                    ],
-                  ),
-                );
-              }).toList(),
+              color: mainColor,
+              child: Text(
+                "Отправить данные",
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+              )),
+        ]);
+  }
+
+  Widget _buildResponseText() {
+    return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          SizedBox(height: 10.0),
+          Text(
+            _response,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: Colors.black,
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
             ),
           ),
         ]);

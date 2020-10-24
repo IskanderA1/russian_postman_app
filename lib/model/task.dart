@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:russian_postman_app/model/situation.dart';
 
 class TaskModel {
 
@@ -14,7 +15,7 @@ class TaskModel {
   double lon;
   int type;
   List<LatLng> road = List<LatLng>();
-
+  List<Situation> situations = List<Situation>();
  /* TaskModel.fromJson(Map<String, dynamic> json)
       : taskID = json["taskID"],
         taskDescription = json["taskDescription"],
