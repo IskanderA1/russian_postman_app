@@ -19,9 +19,9 @@ class _MainScreenState extends State<MainScreen> {
   void initState() {
     super.initState();
     _placesList = List<TaskModel>();
-    _placesList.add(TaskModel(taskDescription: "Есть адрес, нету точки, определить наличие точки по этому адресу", address: "Россия, Тюменская область, Тюменский район, Червишевский тракт, 19 километр, д2", type: 1));
-    _placesList.add(TaskModel(taskDescription: "Есть точка (метка на карте), определить, есть ли адрес", lat: 55, lon: 10, type: 2));
-    _placesList.add(TaskModel(taskDescription: "Есть точка (метка на карте), определить, есть ли адрес", lat: 33, lon: 45, type: 2));
+    _placesList.add(TaskModel(taskID: "151246", taskDescription: "Есть адрес, нету точки, определить наличие точки по этому адресу", address: "Россия, Тюменская область, Тюменский район, Червишевский тракт, 19 километр, д2", type: 1));
+    _placesList.add(TaskModel(taskID: "123512", taskDescription: "Есть точка (метка на карте), определить, есть ли адрес", lat: 55, lon: 10, type: 2));
+    _placesList.add(TaskModel(taskID: "634524", taskDescription: "Есть точка (метка на карте), определить, есть ли адрес", lat: 33, lon: 45, type: 2));
 
     if(_placesList.isEmpty){
       _heading = "Нет заявок";
@@ -130,7 +130,7 @@ class _MainScreenState extends State<MainScreen> {
               ),
               onTap: (){
                 Navigator.push(context, MaterialPageRoute(builder: (context){
-                  return TaskScreen();
+                  return TaskScreen(taskModel: _placesList[index],);
                 }
                 ),
                 );

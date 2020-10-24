@@ -1,16 +1,26 @@
 import 'dart:async';
-
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:flutter/material.dart';
+import 'package:russian_postman_app/model/task.dart';
 import 'package:russian_postman_app/util/constants.dart';
 import 'package:rxdart/rxdart.dart';
+import 'package:russian_postman_app/services/location.dart';
 
 class SideBar extends StatefulWidget {
+  final TaskModel taskModel;
+  final Function searchByCord;
+  SideBar({Key key, @required this.taskModel, this.searchByCord}) : super(key: key);
   @override
   _SideBarState createState() => _SideBarState();
 }
 
 class _SideBarState extends State<SideBar>
     with SingleTickerProviderStateMixin<SideBar> {
+  Function _searchByCord;
+  TaskModel _taskModel;
+  bool addressEnable;
+  bool locationEnable;
+
   AnimationController _animationController;
   StreamController<bool> isSidebarOpenedStreamController;
   Stream<bool> isSidebarOpenedStream;
@@ -20,11 +30,24 @@ class _SideBarState extends State<SideBar>
   @override
   void initState() {
     super.initState();
+    _taskModel = widget.taskModel;
     _animationController =
         AnimationController(vsync: this, duration: _animationDuration);
     isSidebarOpenedStreamController = PublishSubject<bool>();
     isSidebarOpenedStream = isSidebarOpenedStreamController.stream;
     isSidebarOpenedSink = isSidebarOpenedStreamController.sink;
+
+    if (_taskModel.address == null) {
+      addressEnable = true;
+    } else {
+      addressEnable = false;
+    }
+    if (_taskModel.lat != null && _taskModel.lon != null) {
+      locationEnable = true;
+    } else {
+      locationEnable = false;
+    }
+    _searchByCord = widget.searchByCord;
   }
 
   @override
@@ -59,7 +82,7 @@ class _SideBarState extends State<SideBar>
         return AnimatedPositioned(
           duration: _animationDuration,
           top: isSideBarOpenedAsync.data ? 0 : -screenHeight,
-          bottom: isSideBarOpenedAsync.data ? 0: screenHeight - 77,
+          bottom: isSideBarOpenedAsync.data ? 0 : screenHeight - 130,
           left: 0,
           right: 0,
           child: Column(
@@ -75,14 +98,13 @@ class _SideBarState extends State<SideBar>
                   ),
                   color: Colors.white,
                   child: SingleChildScrollView(
-
                     physics: AlwaysScrollableScrollPhysics(),
                     child: Column(
                       mainAxisSize: MainAxisSize.max,
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       children: <Widget>[
                         _buildAddress(),
-                        _buildLocation(),
+                        locationEnable?_buildLocation():SizedBox(),
                         _buildDescription(),
                         _buildTrackRoad()
                       ],
@@ -132,16 +154,27 @@ class _SideBarState extends State<SideBar>
         Container(
           alignment: Alignment.centerLeft,
           decoration: kBoxDecorationStyle,
-          height: 60.0,
           child: TextField(
-            keyboardType: TextInputType.streetAddress,
+            enabled: addressEnable,
+            controller: !addressEnable
+                ? TextEditingController.fromValue(
+                    TextEditingValue(
+                      text: _taskModel.address,
+                      selection: TextSelection.collapsed(
+                          offset: _taskModel.address.length),
+                    ),
+                  )
+                : null,
+            keyboardType: TextInputType.multiline,
+            minLines: 1,
+            maxLines: 5,
             style: TextStyle(
               color: mainColor,
               fontFamily: 'OpenSans',
             ),
             decoration: InputDecoration(
               border: InputBorder.none,
-              contentPadding: EdgeInsets.only(left: 14.0),
+              contentPadding: EdgeInsets.all(14.0),
               hintText: 'Введите адрес',
               hintStyle: kHintTextStyle,
             ),
@@ -161,48 +194,47 @@ class _SideBarState extends State<SideBar>
           style: kLabelStyle,
         ),
         SizedBox(height: 10.0),
-       Row(
-
-         children: [
-           Expanded(
-             flex: 1,
-             child: Column(
-               children: [
-                 Text(
-                   "x = ",
-                   textAlign: TextAlign.start,
-                 ),
-                 Text(
-                     "y = "
-                 ),
-               ],
-             ),
-           ),
-           SizedBox(
-             width: 20,
-           ),
-           Expanded(
-             flex: 1,
-             child: MaterialButton(
-               onPressed: ()  {
-               },
-               color: Colors.white,
-               child: Text(
-                 "Показать",
-                 style: TextStyle(
-                   color: mainColor,
-                   fontSize: 16,
-                   fontWeight: FontWeight.w600,
-                 ),
-               ),
-             ),
-           ),
-
-         ],
-       )
+        Row(
+          children: [
+            Expanded(
+              flex: 1,
+              child: Column(
+                children: [
+                  Text(
+                    "x = ${_taskModel.lat}",
+                    textAlign: TextAlign.start,
+                  ),
+                  Text("y = ${_taskModel.lon}"),
+                ],
+              ),
+            ),
+            SizedBox(
+              width: 20,
+            ),
+            Expanded(
+              flex: 1,
+              child: MaterialButton(
+                onPressed: () async {
+                  onIconPressed();
+                  await _searchByCord(_taskModel.lat,_taskModel.lon);
+                },
+                color: Colors.white,
+                child: Text(
+                  "Показать",
+                  style: TextStyle(
+                    color: mainColor,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        )
       ],
     );
   }
+
   Widget _buildDescription() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -235,20 +267,18 @@ class _SideBarState extends State<SideBar>
       ],
     );
   }
+
   Widget _buildTrackRoad() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
         SizedBox(height: 10.0),
-
         Row(
-
           children: [
             Expanded(
               flex: 1,
               child: MaterialButton(
-                onPressed: ()  {
-                },
+                onPressed: () {},
                 color: mainColor,
                 child: Text(
                   "Запись пути",
@@ -260,15 +290,17 @@ class _SideBarState extends State<SideBar>
                 ),
               ),
             ),
-
             Expanded(
-              flex: 1, child: SizedBox(),
+              flex: 1,
+              child: SizedBox(),
             ),
           ],
         )
       ],
     );
   }
+
+
 }
 
 class CustomMenuClipper extends CustomClipper<Path> {

@@ -42,7 +42,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: <Widget>[
                       Text(
-                        'Помошник Почтальена',
+                        'Помощник Почтальона',
                         style: TextStyle(
                           color: mainColor,
                           fontFamily: 'OpenSans',

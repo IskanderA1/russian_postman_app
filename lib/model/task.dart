@@ -2,7 +2,7 @@ import 'package:flutter/cupertino.dart';
 
 class TaskModel {
 
-  TaskModel({this.taskID, @required this.taskDescription, this.address, this.lat, this.lon,
+  TaskModel({@required this.taskID, @required this.taskDescription, this.address, this.lat, this.lon,
     @required this.type});
   String taskID;
   String taskDescription;
