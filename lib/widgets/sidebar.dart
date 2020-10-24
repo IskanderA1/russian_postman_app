@@ -4,12 +4,24 @@ import 'package:flutter/material.dart';
 import 'package:russian_postman_app/model/task.dart';
 import 'package:russian_postman_app/util/constants.dart';
 import 'package:rxdart/rxdart.dart';
-import 'package:russian_postman_app/services/location.dart';
+import 'package:russian_postman_app/services/location_service.dart';
 
 class SideBar extends StatefulWidget {
   final TaskModel taskModel;
   final Function searchByCord;
-  SideBar({Key key, @required this.taskModel, this.searchByCord}) : super(key: key);
+  final Function createMarker;
+  final Function trackLocationUpdate;
+  final Function setAddressLocation;
+  final Function clearRoad;
+  SideBar(
+      {Key key,
+      @required this.taskModel,
+      this.searchByCord,
+      this.createMarker,
+      this.trackLocationUpdate,
+      this.setAddressLocation,
+      this.clearRoad})
+      : super(key: key);
   @override
   _SideBarState createState() => _SideBarState();
 }
@@ -17,9 +29,17 @@ class SideBar extends StatefulWidget {
 class _SideBarState extends State<SideBar>
     with SingleTickerProviderStateMixin<SideBar> {
   Function _searchByCord;
+  Function _createMarker;
+  Function _trackLocationUpdate;
+  Function _setAddressLocation;
+  Function _clearRoad;
   TaskModel _taskModel;
-  bool addressEnable;
+  bool cityEnable;
+  bool streetEnable;
+  bool houseEnable;
   bool locationEnable;
+  bool _trackLocationEnable = false;
+  List<String> _listDescription;
 
   AnimationController _animationController;
   StreamController<bool> isSidebarOpenedStreamController;
@@ -37,17 +57,24 @@ class _SideBarState extends State<SideBar>
     isSidebarOpenedStream = isSidebarOpenedStreamController.stream;
     isSidebarOpenedSink = isSidebarOpenedStreamController.sink;
 
-    if (_taskModel.address == null) {
-      addressEnable = true;
-    } else {
-      addressEnable = false;
-    }
-    if (_taskModel.lat != null && _taskModel.lon != null) {
-      locationEnable = true;
-    } else {
-      locationEnable = false;
-    }
+    _taskModel.city == null ? cityEnable = true : cityEnable = false;
+    _taskModel.street == null ? streetEnable = true : streetEnable = false;
+    _taskModel.house == null ? houseEnable = true : houseEnable = false;
+    _taskModel.lat == null ? locationEnable = true : locationEnable = false;
+
     _searchByCord = widget.searchByCord;
+    _createMarker = widget.createMarker;
+    _trackLocationUpdate = widget.trackLocationUpdate;
+    _setAddressLocation = widget.setAddressLocation;
+    _clearRoad = widget.clearRoad;
+
+    _listDescription = <String>[
+      "Частный дом",
+      "Многоквартирный дом",
+      "Магазин",
+      "Заброшенное здание",
+      "Предприятие"
+    ];
   }
 
   @override
@@ -69,6 +96,8 @@ class _SideBarState extends State<SideBar>
       isSidebarOpenedSink.add(true);
       _animationController.forward();
     }
+    print(
+        "roadLength = ${_taskModel.road.length == null ? 0 : _taskModel.road.length}");
   }
 
   @override
@@ -91,7 +120,7 @@ class _SideBarState extends State<SideBar>
                 child: Container(
                   width: screenWidth,
                   padding: const EdgeInsets.only(
-                    top: 48,
+                    top: 12,
                     bottom: 16,
                     left: 32,
                     right: 32,
@@ -103,10 +132,17 @@ class _SideBarState extends State<SideBar>
                       mainAxisSize: MainAxisSize.max,
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       children: <Widget>[
-                        _buildAddress(),
-                        locationEnable?_buildLocation():SizedBox(),
+                        _buildCity(),
+                        /*Row(
+                          children: [ ],
+                        ),*/
+                        _buildStreet(),
+                        _buildHouse(),
+                        !locationEnable
+                            ? _buildLocation()
+                            : _buildGetLocation(),
+                        _buildTrackRoad(),
                         _buildDescription(),
-                        _buildTrackRoad()
                       ],
                     ),
                   ),
@@ -142,32 +178,119 @@ class _SideBarState extends State<SideBar>
     );
   }
 
-  Widget _buildAddress() {
+  Widget _buildCity() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
+        SizedBox(height: 10.0),
         Text(
-          'Aдрес: ',
+          'Город: ',
           style: kLabelStyle,
         ),
-        SizedBox(height: 10.0),
+        SizedBox(height: 8.0),
         Container(
           alignment: Alignment.centerLeft,
           decoration: kBoxDecorationStyle,
           child: TextField(
-            enabled: addressEnable,
-            controller: !addressEnable
+            enabled: cityEnable,
+            controller: !cityEnable
                 ? TextEditingController.fromValue(
                     TextEditingValue(
-                      text: _taskModel.address,
+                      text: _taskModel.city,
                       selection: TextSelection.collapsed(
-                          offset: _taskModel.address.length),
+                          offset: _taskModel.city.length),
                     ),
                   )
                 : null,
             keyboardType: TextInputType.multiline,
             minLines: 1,
-            maxLines: 5,
+            maxLines: 2,
+            style: TextStyle(
+              color: mainColor,
+              fontFamily: 'OpenSans',
+            ),
+            decoration: InputDecoration(
+              border: InputBorder.none,
+              contentPadding: EdgeInsets.all(14.0),
+              hintText: 'Введите адрес',
+              hintStyle: kHintTextStyle,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildStreet() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        SizedBox(height: 10.0),
+        Text(
+          'Улица: ',
+          style: kLabelStyle,
+        ),
+        SizedBox(height: 8.0),
+        Container(
+          alignment: Alignment.centerLeft,
+          decoration: kBoxDecorationStyle,
+          child: TextField(
+            enabled: streetEnable,
+            controller: !streetEnable
+                ? TextEditingController.fromValue(
+                    TextEditingValue(
+                      text: _taskModel.street,
+                      selection: TextSelection.collapsed(
+                          offset: _taskModel.street.length),
+                    ),
+                  )
+                : null,
+            keyboardType: TextInputType.multiline,
+            minLines: 1,
+            maxLines: 2,
+            style: TextStyle(
+              color: mainColor,
+              fontFamily: 'OpenSans',
+            ),
+            decoration: InputDecoration(
+              border: InputBorder.none,
+              contentPadding: EdgeInsets.all(14.0),
+              hintText: 'Введите адрес',
+              hintStyle: kHintTextStyle,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildHouse() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        SizedBox(height: 10.0),
+        Text(
+          'Дом: ',
+          style: kLabelStyle,
+        ),
+        SizedBox(height: 8.0),
+        Container(
+          alignment: Alignment.centerLeft,
+          decoration: kBoxDecorationStyle,
+          child: TextField(
+            enabled: houseEnable,
+            controller: !houseEnable
+                ? TextEditingController.fromValue(
+                    TextEditingValue(
+                      text: _taskModel.house,
+                      selection: TextSelection.collapsed(
+                          offset: _taskModel.house.length),
+                    ),
+                  )
+                : null,
+            keyboardType: TextInputType.multiline,
+            minLines: 1,
+            maxLines: 2,
             style: TextStyle(
               color: mainColor,
               fontFamily: 'OpenSans',
@@ -197,7 +320,7 @@ class _SideBarState extends State<SideBar>
         Row(
           children: [
             Expanded(
-              flex: 1,
+              flex: 7,
               child: Column(
                 children: [
                   Text(
@@ -212,11 +335,12 @@ class _SideBarState extends State<SideBar>
               width: 20,
             ),
             Expanded(
-              flex: 1,
+              flex: 5,
               child: MaterialButton(
                 onPressed: () async {
                   onIconPressed();
-                  await _searchByCord(_taskModel.lat,_taskModel.lon);
+                  await _createMarker(2, _taskModel.lat, _taskModel.lon);
+                  await _searchByCord(_taskModel.lat, _taskModel.lon);
                 },
                 color: Colors.white,
                 child: Text(
@@ -235,7 +359,62 @@ class _SideBarState extends State<SideBar>
     );
   }
 
-  Widget _buildDescription() {
+  Widget _buildGetLocation() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        SizedBox(height: 10.0),
+        Text(
+          'Определить координаты: ',
+          style: kLabelStyle,
+        ),
+        SizedBox(height: 10.0),
+        Row(
+          children: [
+            Expanded(
+              flex: 7,
+              child: Column(
+                children: [
+                  Text(
+                    "x = ${_taskModel.lat == null ? 0 : _taskModel.lat}",
+                    textAlign: TextAlign.start,
+                  ),
+                  Text("y = ${_taskModel.lon == null ? 0 : _taskModel.lon}"),
+                ],
+              ),
+            ),
+            SizedBox(
+              width: 10,
+            ),
+            Expanded(
+              flex: 5,
+              child: MaterialButton(
+                onPressed: () async {
+                  onIconPressed();
+                  LatLng latLng = await _setAddressLocation();
+                  setState(() {
+                    _taskModel.lat = latLng.latitude;
+                    _taskModel.lon = latLng.longitude;
+                  });
+                },
+                color: Colors.white,
+                child: Text(
+                  "Определить",
+                  style: TextStyle(
+                    color: mainColor,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        )
+      ],
+    );
+  }
+
+  /*Widget _buildDescription() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
@@ -266,7 +445,7 @@ class _SideBarState extends State<SideBar>
         ),
       ],
     );
-  }
+  }*/
 
   Widget _buildTrackRoad() {
     return Column(
@@ -278,21 +457,61 @@ class _SideBarState extends State<SideBar>
             Expanded(
               flex: 1,
               child: MaterialButton(
-                onPressed: () {},
+                onPressed: () async {
+                  setState(() {
+                    _trackLocationEnable
+                        ? _trackLocationEnable = false
+                        : _trackLocationEnable = true;
+                    _trackLocationUpdate();
+                  });
+                },
                 color: mainColor,
-                child: Text(
-                  "Запись пути",
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
+                child: !_trackLocationEnable
+                    ? Text(
+                        "Запись пути",
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      )
+                    : Text(
+                        "Стоп",
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
               ),
+            ),
+            SizedBox(
+              width: 20,
             ),
             Expanded(
               flex: 1,
-              child: SizedBox(),
+              child: _trackLocationEnable
+                  ? MaterialButton(
+                      onPressed: () async {
+                        setState(() {
+                          _trackLocationEnable
+                              ? _trackLocationEnable = false
+                              : _trackLocationEnable = true;
+                          _trackLocationUpdate();
+                          _clearRoad();
+                        });
+                      },
+                      color: Colors.red,
+                      child: Text(
+                        "Очистить",
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    )
+                  : SizedBox(),
             ),
           ],
         )
@@ -300,7 +519,41 @@ class _SideBarState extends State<SideBar>
     );
   }
 
-
+  Widget _buildDescription() {
+    return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          SizedBox(height: 10.0),
+          Expanded(
+            child: DropdownButton<String>(
+              hint: Text("Выберите тип объекта"),
+              value: _taskModel.taskDescription,
+              onChanged: (String value) {
+                setState(() {
+                  this._taskModel.taskDescription = value;
+                  print(_taskModel.taskDescription);
+                });
+              },
+              items: _listDescription.map((String value) {
+                return DropdownMenuItem<String>(
+                  value: value,
+                  child: Row(
+                    children: <Widget>[
+                      SizedBox(
+                        width: 10,
+                      ),
+                      Text(
+                        value,
+                        style: TextStyle(color: Colors.black),
+                      ),
+                    ],
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
+        ]);
+  }
 }
 
 class CustomMenuClipper extends CustomClipper<Path> {

@@ -19,9 +19,9 @@ class _MainScreenState extends State<MainScreen> {
   void initState() {
     super.initState();
     _placesList = List<TaskModel>();
-    _placesList.add(TaskModel(taskID: "151246", taskDescription: "Есть адрес, нету точки, определить наличие точки по этому адресу", address: "Россия, Тюменская область, Тюменский район, Червишевский тракт, 19 километр, д2", type: 1));
-    _placesList.add(TaskModel(taskID: "123512", taskDescription: "Есть точка (метка на карте), определить, есть ли адрес", lat: 55, lon: 10, type: 2));
-    _placesList.add(TaskModel(taskID: "634524", taskDescription: "Есть точка (метка на карте), определить, есть ли адрес", lat: 33, lon: 45, type: 2));
+    _placesList.add(TaskModel(taskID: "151246", taskDescription: "Есть адрес, нету точки, определить наличие точки по этому адресу", city: "Казань", street: "Мавлютова",house: "15", type: 1));
+    _placesList.add(TaskModel(taskID: "123512", taskDescription: "Есть точка (метка на карте), определить, есть ли адрес",city: "Казань", lat: 55.857678, lon: 48.888236, type: 2));
+    _placesList.add(TaskModel(taskID: "634524", taskDescription: "Есть точка (метка на карте), определить, есть ли адрес", lat: 55.850464, lon: 48.895049, type: 2));
 
     if(_placesList.isEmpty){
       _heading = "Нет заявок";
@@ -113,7 +113,7 @@ class _MainScreenState extends State<MainScreen> {
                                           )
                                       ),
                                     ),
-                                    AutoSizeText(_placesList[index].type==1?_placesList[index].address:"x: ${_placesList[index].lat} y: ${_placesList[index].lon}",
+                                    AutoSizeText(_placesList[index].type==1?"${_placesList[index].city==null?"...":_placesList[index].city},${_placesList[index].street==null?"...":_placesList[index].street}, ${_placesList[index].house==null?"...":_placesList[index].house},":"x: ${_placesList[index].lat} y: ${_placesList[index].lon}",
                                         maxLines: 3,
                                         style: TextStyle(fontSize: 14.0)
                                     ),
