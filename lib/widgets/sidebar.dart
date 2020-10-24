@@ -14,6 +14,7 @@ class SideBar extends StatefulWidget {
   final Function trackLocationUpdate;
   final Function setAddressLocation;
   final Function clearRoad;
+  final Function addSituation;
   SideBar(
       {Key key,
       @required this.taskModel,
@@ -21,7 +22,8 @@ class SideBar extends StatefulWidget {
       this.createMarker,
       this.trackLocationUpdate,
       this.setAddressLocation,
-      this.clearRoad})
+      this.clearRoad,
+        this.addSituation})
       : super(key: key);
   @override
   _SideBarState createState() => _SideBarState();
@@ -34,6 +36,7 @@ class _SideBarState extends State<SideBar>
   Function _trackLocationUpdate;
   Function _setAddressLocation;
   Function _clearRoad;
+  Function _addSituation;
   TaskModel _taskModel;
   String _response = "";
   bool cityEnable;
@@ -70,6 +73,7 @@ class _SideBarState extends State<SideBar>
     _trackLocationUpdate = widget.trackLocationUpdate;
     _setAddressLocation = widget.setAddressLocation;
     _clearRoad = widget.clearRoad;
+    _addSituation = widget.addSituation;
 
     _listDescription = <String>[
       "Частный дом",
@@ -126,8 +130,8 @@ class _SideBarState extends State<SideBar>
                   padding: const EdgeInsets.only(
                     top: 12,
                     bottom: 16,
-                    left: 32,
-                    right: 32,
+                    left: 16,
+                    right: 16,
                   ),
                   color: Colors.white,
                   child: SingleChildScrollView(
@@ -476,7 +480,7 @@ class _SideBarState extends State<SideBar>
         Row(
           children: [
             Expanded(
-              flex: 1,
+              flex: 5,
               child: MaterialButton(
                 onPressed: () async {
                   setState(() {
@@ -507,10 +511,26 @@ class _SideBarState extends State<SideBar>
               ),
             ),
             SizedBox(
-              width: 20,
+              width: 10,
+            ),
+            _trackLocationEnable
+            ?Expanded(
+              flex: 2,
+              child: MaterialButton(
+                onPressed: () async {
+                  _addSituation();
+                },
+                color: Colors.yellow,
+                child: Icon(
+                  Icons.assistant_photo
+                ),
+              ),
+            ):SizedBox(),
+            SizedBox(
+              width: 10,
             ),
             Expanded(
-              flex: 1,
+              flex: 5,
               child: _taskModel.road.isNotEmpty
                   ? MaterialButton(
                       onPressed: () async {

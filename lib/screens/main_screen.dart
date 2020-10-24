@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:russian_postman_app/model/task.dart';
 import 'package:auto_size_text/auto_size_text.dart';
+import 'package:russian_postman_app/screens/map_task_screen.dart';
 import 'package:russian_postman_app/screens/task_screen.dart';
 import 'package:russian_postman_app/util/constants.dart';
 import 'package:russian_postman_app/widgets/divider_with_text_widget.dart';
@@ -22,7 +23,7 @@ class _MainScreenState extends State<MainScreen> {
     _placesList.add(TaskModel(taskID: "151246", taskDescription: "Есть адрес, нету точки, определить наличие точки по этому адресу", city: "Казань", street: "Мавлютова",house: "15", type: 1));
     _placesList.add(TaskModel(taskID: "123512", taskDescription: "Есть точка (метка на карте), определить, есть ли адрес",city: "Казань", lat: 55.857678, lon: 48.888236, type: 2));
     _placesList.add(TaskModel(taskID: "634524", taskDescription: "Есть точка (метка на карте), определить, есть ли адрес", lat: 55.850464, lon: 48.895049, type: 2));
-
+    _placesList.add(TaskModel(taskID: "523532", taskDescription: "Есть точка (метка на карте), определить, есть ли адрес", lat: 55.8502344, lon: 48.89435, type: 2));
     if(_placesList.isEmpty){
       _heading = "Нет заявок";
     }else{
@@ -58,7 +59,28 @@ class _MainScreenState extends State<MainScreen> {
                     buildPlaceCard(context, index),
               ),
             ),
+            Padding(
+                padding: const EdgeInsets.only(left: 10.0, right: 10.0,bottom: 14,top: 16),
+                child:  MaterialButton(
+                  onPressed: ()  {
+                    Navigator.push(context,
+                    MaterialPageRoute(builder: (context){
+                      return MapTaskScreen(placesList: _placesList);
+                    }));
+                  },
+                  color: mainColor,
+                  child: Text(
+                    "Показать на карте",
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                )
+            ),
           ],
+
         ),
       ),
     );
